@@ -1,0 +1,39 @@
+services:
+  icmp_exporter:
+    image: python:3.10
+    container_name: icmp_exporter
+    working_dir: /app
+    volumes:
+      - ./exporter:/app
+    command: >
+      bash -lc "
+        apt update &&
+        apt install -y iputils-ping &&
+        pip install -r /app/requirements.txt &&
+        python3 /app/icmp_exporter.py
+      "
+    network_mode: host
+    cap_add:
+      - NET_RAW
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    restart: always
